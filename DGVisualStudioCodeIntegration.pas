@@ -1,4 +1,4 @@
-﻿unit DGVisualStudioCodeIntegration;
+unit DGVisualStudioCodeIntegration;
 
 interface
 
@@ -8,14 +8,12 @@ implementation
 uses
   System.Classes,
   System.SysUtils,
-  System.Generics.Collections,                                                                 
+  System.Generics.Collections,
   ToolsAPI,
   Vcl.Menus,
-  OSCmdLineExecutor,
   Vcl.Dialogs,
   Vcl.ActnList,
   Vcl.Forms,
-  Winapi.Windows,
   WinApi.ShellAPI;
 
 
@@ -125,26 +123,31 @@ begin
        exit;
   end;
 
-  var ProjectPath := ExtractFilePath(project.FileName);
+  var ProjectPath := ExtractFileDir(project.FileName);
+
+  // Open <ProjectName>.code-workspace file if exists; otherwise, open the folder.
+  var WorkspaceFilePath := ChangeFileExt(project.FileName, '.code-workspace');
+  if FileExists(WorkspaceFilePath) then
+    ProjectPath := WorkspaceFilePath;
 
   if not SaveAllModules then
     exit;
 
-  var cmdline:string;
+  // Handle paths containing spaces. However, VSCode does not allow the
+  // ":linenumber:column" suffix when combined with quotes. So, for file paths
+  // that contains spaces we have to sacrifice positioning.
+  var commandline:string;
   if sourceInfos.Line < 0 then
-    cmdline := Format('cmd /c "code --reuse-window %s"', [ProjectPath])
+    commandline := Format('/s /c code --reuse-window "%s"', [ProjectPath])
+
+  else if Pos(' ', FileName) > 0 then
+    commandline := Format('/s /c code --reuse-window "%s" -g "%s"', [ProjectPath, FileName])
+
   else
-    cmdline := Format('cmd /c "code --reuse-window %s -g %s:%d:%d"', [ProjectPath, FileName, sourceInfos.Line, sourceInfos.Column]);
+    commandline := Format('/s /c code --reuse-window "%s" -g %s:%d:%d', [ProjectPath, FileName, sourceInfos.Line, sourceInfos.Column]);
 
+  ShellExecute(0, nil, 'cmd', PChar(commandline), nil, 0);
 
-  var executor := TOSCommandLineExecutor.Create(nil);
-  try
-     executor.WorkDir := ExtractFilePath(filename);
-     executor.CmdLine := Cmdline;
-     executor.Execute;
-  finally
-     executor.Free;
-  end;
 end;
 
 

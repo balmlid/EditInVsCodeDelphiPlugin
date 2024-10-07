@@ -32,7 +32,6 @@ requires
   designide;
 
 contains
-  DGVisualStudioCodeIntegration in 'DGVisualStudioCodeIntegration.pas',
-  OSCmdLineExecutor in 'OSCmdLineExecutor.pas';
+  DGVisualStudioCodeIntegration in 'DGVisualStudioCodeIntegration.pas';
 
 end.
